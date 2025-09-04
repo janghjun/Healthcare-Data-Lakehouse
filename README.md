@@ -1,40 +1,32 @@
-# 🏥 Healthcare Data Lakehouse (FHIR)
+# 프로젝트: 만성질환(고혈압·당뇨) 환자의 약물·영양제 병용 패턴 분석
 
-## 📌 프로젝트 개요
-의료 데이터(FHIR 표준 기반)를 활용한 **데이터 레이크하우스 파이프라인 구축** 프로젝트입니다.  
-데이터 품질 검증, 메타데이터 관리, BI 시각화를 포함한 **엔드투엔드(End-to-End) 데이터 엔지니어링** 사례입니다.
+## 배경
+처음에는 단순히 "보충제를 먹는 게 혈당이나 혈압에 영향을 줄까?"라는 호기심에서 출발했습니다.  
+찾아보니 당뇨병 환자에게 보충제 복용이 혈당 조절에 직접적인 효과가 있다는 **확실한 근거는 부족**하다는 게 ADA 2025 가이드라인의 입장이었습니다.  
+반대로, 고혈압 쪽에서는 **칼륨·마그네슘 보충**이 혈압을 조금 낮출 수 있다는 메타분석이 여러 번 보고된 것을 확인했습니다.  
 
----
+이 과정에서 깨달은 점은,  
+- 두 질환이 서로에게 영향을 주는 **대사증후군 축**에 있다는 것,  
+- 한국 국민건강영양조사(KNHANES)에는 **혈압·HbA1c·보충제 섭취 정보**가 함께 들어 있다는 것,  
+이 두 가지였습니다.  
 
-## ⚙️ 아키텍처
-- Source: **Synthea** (합성 환자 데이터)
-- Ingestion: Apache Airflow
-- Storage: AWS S3 + Delta Lake / Iceberg
-- Transformation: dbt + fhir-dbt-utils
-- Data Quality: Great Expectations
-- Metadata/Lineage: OpenMetadata / DataHub
-- Visualization: Tableau / Power BI
+그래서 이번 프로젝트의 방향은 이렇게 잡았습니다:
+> **“한국형 데이터에서 고혈압(메인)·당뇨(보조) 환자의 약물+보충제 병용 패턴이 임상지표(SBP/DBP, HbA1c)와 어떤 연관성을 가지는지 관찰한다.”**
 
-![architecture](docs/architecture.png)
+## 데이터
+- **국민건강영양조사(KNHANES)**: 혈압, HbA1c, 보충제 섭취, 생활습관, 인구학적 정보
+- **HIRA/NHIS**: 항고혈압제·당뇨병약 처방 패턴(보충제는 없지만 약물 병용 지표 확보)
+- **MFDS 건강기능식품 Open API**: 보충제 성분·기능 카탈로그 구축
+- (보완) **NHANES + DSLD/DSID**: 해외 보충제-임상지표 데이터셋 참고
 
----
+## 접근 방법
+1. KNHANES 데이터를 중심으로 보충제 섭취군 vs 비섭취군, 약물 단독 vs 약물+보충제 병용군 비교
+2. 복합표본가중치 및 성향점수 매칭으로 교란 통제
+3. 혈압(SBP/DBP), HbA1c와의 연관성 분석 → **효능 단정이 아닌 패턴 탐색**
+4. HIRA 처방 패턴을 병행 분석해 한국 의료현장의 현실적 약물 병용 양상 보완
+5. 데이터 파이프라인은 Airflow + Spark + Iceberg + dbt로 구성하고, 품질 검증은 Great Expectations, 메타데이터/라인리지는 OpenMetadata로 관리
 
-## 🚀 주요 기능
-- FHIR 환자 데이터 적재 및 변환
-- **Bronze → Silver → Gold** 계층 구조 설계
-- GX 기반 데이터 품질 자동 검증
-- OpenMetadata 기반 계보 추적 및 데이터 카탈로그
-- BI 대시보드: 환자 재입원율, 진료 패턴 분석
-
----
-
-## 📊 결과물
--	GX 데이터 품질 리포트 (docs/gx_report.html)
--	Tableau 대시보드 (docs/tableau_dashboard.png)
--	OpenMetadata 계보 다이어그램
-
-## 향후 개선
-- 실시간 스트리밍 데이터 연계
-- 의료 데이터 De-ID(비식별화) 적용
-
-  ---
+## 기대 결과
+- 보충제 병용군의 혈압/HbA1c 분포 차이를 시각화
+- 성분 카테고리(칼륨·마그네슘·오메가3 등)에 따른 패턴 리포트
+- 파이프라인 전 과정(GX 리포트, 라인리지, BI 대시보드)을 함께 제공
